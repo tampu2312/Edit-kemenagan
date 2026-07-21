@@ -238,11 +238,11 @@
 </div>
 <div class="tc" id="tc"></div>
 
-<!-- Firebase Integration -->
+<!-- Firebase Integration (Fix Sync) -->
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
-    import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyC-wSrFMyz9DoFZmcO1MGtV7LQouAcsCtE",
@@ -258,19 +258,26 @@
     const analytics = getAnalytics(app);
     const db = getFirestore(app);
     
-    const docRef = doc(db, "editor_config", "main_config");
+    // Menggunakan collection "editor_settings" dan document "live_data"
+    const docRef = doc(db, "editor_settings", "live_data");
     
     window.fbSetDoc = setDoc;
     window.fbDocRef = docRef;
+    window.fbServerTimestamp = serverTimestamp;
     window.isSyncing = false;
 
+    // Real-time listener - Ini yang menjaga update antar PC
     onSnapshot(docRef, (docSnap) => {
         if (docSnap.exists()) {
             const s = docSnap.data();
+            // Pastikan ini update dari PC lain, bukan dari PC ini sendiri
             if (!window.isSyncing && s) {
                 window.applyFbData(s);
             }
         }
+    }, (error) => {
+        console.error("Firebase Listen Error:", error);
+        window.toast('Firebase Error: Cek Rules Database Anda!', 'e');
     });
 </script>
 
@@ -430,17 +437,23 @@ function sv(){
     
     const ind=el('si');ind.classList.add('show');clearTimeout(ind._t);ind._t=setTimeout(()=>ind.classList.remove('show'),1000);
 
-    if(window.fbSetDoc && window.fbDocRef){
-        window.isSyncing = true;
-        window.fbSetDoc(window.fbDocRef, s).then(() => {
+    // Kirim ke Firebase dengan Timestamp server
+    if(window.fbSetDoc && window.fbDocRef && window.fbServerTimestamp){
+        window.isSyncing = true; // Cegah loop lokal
+        window.fbSetDoc(window.fbDocRef, {
+            ...s,
+            lastUpdated: window.fbServerTimestamp() // Tambahkan waktu update
+        }).then(() => {
             window.isSyncing = false;
         }).catch((err) => {
-            console.error("Firebase Sync Error:", err);
+            console.error("Firebase Write Error:", err);
+            window.toast('Gagal Sync: Periksa Rules Firebase!', 'e');
             window.isSyncing = false;
         });
     }
 }
 
+// Terima data dari Firebase
 window.applyFbData = function(s) {
     if(s.bgType)el('bgType').value=s.bgType;
     if(s.c1)el('c1').value=s.c1;
@@ -486,7 +499,7 @@ function stg(id,on){const e=el(id);if(on)e.classList.add('on');else e.classList.
 function tsec(h){h.classList.toggle('clpsd');h.nextElementSibling.classList.toggle('hid')}
 function ttg(e){e.classList.toggle('on')}
 function obc(){const t=el('bgType').value;el('oPx').style.display=t==='pixel'?'block':'none';el('oGr').style.display=t==='gradient'?'block':'none';el('oSl').style.display=t==='solid'?'block':'none';el('oIm').style.display=t==='image'?'block':'none';go()}
-function toast(m,t='i'){const c=el('tc'),e=document.createElement('div');e.className=`toast ${t}`;const ic={s:'fa-check-circle',e:'fa-exclamation-circle',i:'fa-info-circle'};e.innerHTML=`<i class="fas ${ic[t]||ic.i}"></i><span>${m}</span>`;c.appendChild(e);setTimeout(()=>{e.style.opacity='0';e.style.transform='translateX(30px)';e.style.transition='all 0.3s';setTimeout(()=>e.remove(),300)},2000)}
+function toast(m,t='i'){const c=el('tc'),e=document.createElement('div');e.className=`toast ${t}`;const ic={s:'fa-check-circle',e:'fa-exclamation-circle',i:'fa-info-circle'};e.innerHTML=`<i class="fas ${ic[t]||ic.i}"></i><span>${m}</span>`;c.appendChild(e);setTimeout(()=>{e.style.opacity='0';e.style.transform='translateX(30px)';e.style.transition='all 0.3s';setTimeout(()=>e.remove(),300)},3000)}
 </script>
 </body>
 </html>

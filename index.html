@@ -19,7 +19,6 @@
         @keyframes of{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(25px,-15px) scale(1.08)}}
         .app{position:relative;z-index:1;display:flex;min-height:100vh}
         
-        /* Sidebar Styling */
         .side{width:400px;min-width:400px;background:linear-gradient(180deg,var(--bg2),#080814);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;position:sticky;top:0}
         .shd{padding:18px 20px;border-bottom:1px solid var(--border);background:linear-gradient(135deg,rgba(0,255,163,0.06),rgba(51,136,255,0.04));position:relative}
         .shd .row{display:flex;align-items:center;gap:12px}
@@ -35,7 +34,6 @@
         .ss::-webkit-scrollbar-track{background:transparent}
         .ss::-webkit-scrollbar-thumb{background:var(--border);border-radius:8px}
         
-        /* Colorful Section Boxes */
         .sec{margin-bottom:10px;background:rgba(16,16,30,0.8);border:1px solid var(--border);border-radius:14px;overflow:hidden;backdrop-filter:blur(10px);transition:all 0.3s}
         .sec:hover{border-color:rgba(255,255,255,0.15);box-shadow:0 4px 20px rgba(0,0,0,0.3)}
         
@@ -43,7 +41,6 @@
         .sH .ib{width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:12px;transition:transform 0.3s}
         .sH:hover .ib{transform:scale(1.1) rotate(-5deg)}
         
-        /* Header Color Accents */
         .sH.h-bl{background:linear-gradient(90deg,rgba(51,136,255,0.15),transparent);border-bottom:1px solid rgba(51,136,255,0.2)}
         .sH.h-bl h3{color:var(--blue)}
         .sH.h-gn{background:linear-gradient(90deg,rgba(0,255,163,0.15),transparent);border-bottom:1px solid rgba(0,255,163,0.2)}
@@ -64,7 +61,6 @@
         .sB{padding:12px 14px}
         .sB.hid{display:none}
         
-        /* Form Styling */
         .fg{margin-bottom:8px}.fg:last-child{margin-bottom:0}
         .fl{display:block;font-size:10px;font-weight:700;color:var(--fg2);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px}
         .fi{width:100%;background:rgba(0,0,0,0.4);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--fg);font-size:13px;font-family:inherit;outline:none;transition:all 0.2s}
@@ -78,7 +74,6 @@
         .fra::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--accent);cursor:pointer;box-shadow:0 0 8px rgba(0,255,163,0.5);border:2px solid #fff}
         .rv{font-size:10px;color:var(--accent);font-weight:700;float:right;background:rgba(0,255,163,0.1);padding:1px 6px;border-radius:4px}
         
-        /* Upload Box */
         .upl{border:2px dashed var(--border);border-radius:10px;padding:18px 10px;text-align:center;cursor:pointer;transition:all 0.3s;position:relative;overflow:hidden;background:rgba(0,0,0,0.3)}
         .upl:hover{border-color:var(--accent);background:rgba(0,255,163,0.05);transform:translateY(-2px)}
         .upl i{font-size:22px;color:var(--fg2);margin-bottom:6px;display:block}
@@ -238,61 +233,62 @@
 </div>
 <div class="tc" id="tc"></div>
 
-<!-- Firebase Integration (Fix Sync) -->
+<!-- Firebase Integration Clean (Tanpa Analytics yang bikin error) -->
 <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
-    import { getFirestore, doc, setDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
+    // Perbaikan config: storageBucket diperbaiki ke appspot.com
     const firebaseConfig = {
         apiKey: "AIzaSyC-wSrFMyz9DoFZmcO1MGtV7LQouAcsCtE",
         authDomain: "reporttogelon.firebaseapp.com",
         projectId: "reporttogelon",
-        storageBucket: "reporttogelon.firebasestorage.app",
+        storageBucket: "reporttogelon.appspot.com", 
         messagingSenderId: "602565218902",
         appId: "1:602565218902:web:77979df55bcf75df05e1f7",
         measurementId: "G-93ZZ0W79RB"
     };
 
-    const app = initializeApp(firebaseConfig);
-    const analytics = getAnalytics(app);
-    const db = getFirestore(app);
-    
-    // Menggunakan collection "editor_settings" dan document "live_data"
-    const docRef = doc(db, "editor_settings", "live_data");
-    
-    window.fbSetDoc = setDoc;
-    window.fbDocRef = docRef;
-    window.fbServerTimestamp = serverTimestamp;
+    try {
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const docRef = doc(db, "editor_settings", "live_data");
+        
+        window.fbSetDoc = setDoc;
+        window.fbDocRef = docRef;
+        window.fbConnected = true;
 
-    const statusEl = document.getElementById('fbStatus');
+        const statusEl = document.getElementById('fbStatus');
 
-    // Real-time listener - Ini yang menjaga update antar PC
-    onSnapshot(docRef, (docSnap) => {
-        if (statusEl) {
-            statusEl.textContent = 'SYNC: LIVE';
-            statusEl.style.background = 'linear-gradient(135deg, var(--accent), #00aa66)';
-            statusEl.style.color = '#000';
-        }
-        if (docSnap.exists()) {
-            const s = docSnap.data();
-            if (s) {
-                window.applyFbData(s);
+        // Listener real-time
+        onSnapshot(docRef, (docSnap) => {
+            if (statusEl) {
+                statusEl.textContent = 'SYNC: LIVE';
+                statusEl.style.background = 'linear-gradient(135deg, var(--accent), #00aa66)';
+                statusEl.style.color = '#000';
             }
-        }
-    }, (error) => {
-        console.error("Firebase Listen Error:", error);
-        if (statusEl) {
-            statusEl.textContent = 'SYNC: ERROR';
-            statusEl.style.background = 'linear-gradient(135deg, var(--danger), #aa1133)';
-            statusEl.style.color = '#fff';
-        }
-        window.toast('ERROR FIREBASE! Buka console (F12) untuk detail. Pastikan Rules Firestore = allow read, write: if true;', 'e');
-    });
+            if (docSnap.exists()) {
+                const s = docSnap.data();
+                if (s) {
+                    window.applyFbData(s);
+                }
+            }
+        }, (error) => {
+            console.error("Firebase Listen Error:", error);
+            if (statusEl) {
+                statusEl.textContent = 'SYNC: ERROR';
+                statusEl.style.background = 'linear-gradient(135deg, var(--danger), #aa1133)';
+                statusEl.style.color = '#fff';
+            }
+            window.toast('Firebase Error: Cek console F12', 'e');
+        });
+    } catch (e) {
+        console.error("Firebase Init Error:", e);
+    }
 </script>
 
 <script>
-const W=1600, H=1600, SK='bukti_1600_v5';
+const W=1600, H=1600, SK='bukti_1600_v6';
 let bgI=null,pfI=null,lgI=null,lgOk=false,stars=[];
 const cv=document.getElementById('mc'),cx=cv.getContext('2d');
 function el(id){return document.getElementById(id)}
@@ -447,14 +443,11 @@ function sv(){
     
     const ind=el('si');ind.classList.add('show');clearTimeout(ind._t);ind._t=setTimeout(()=>ind.classList.remove('show'),1000);
 
-    // Kirim ke Firebase
-    if(window.fbSetDoc && window.fbDocRef && window.fbServerTimestamp){
-        window.fbSetDoc(window.fbDocRef, {
-            ...s,
-            lastUpdated: window.fbServerTimestamp()
-        }).catch((err) => {
+    if(window.fbSetDoc && window.fbDocRef){
+        s.lastUpdated = Date.now(); // Pakai waktu lokal agar lebih ringan
+        window.fbSetDoc(window.fbDocRef, s).catch((err) => {
             console.error("Firebase Write Error:", err);
-            window.toast('Gagal Kirim Data: Periksa Rules Firebase!', 'e');
+            window.toast('Gagal Sync: Periksa Rules / Internet', 'e');
         });
     }
 }
@@ -487,6 +480,7 @@ window.applyFbData = function(s) {
     go();
     
     try{localStorage.setItem(SK,JSON.stringify(s))}catch(e){}
+    toast('Sinkronisasi diterima dari perangkat lain','i');
 }
 
 function ls(){
